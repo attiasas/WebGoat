@@ -20,7 +20,7 @@ jobs:
           command: jf config add jfrog-test --url=https://ecosysjfrog.jfrog.io/ --password=${JF_PLATFORM_PASS} --user=assafa --overwrite
       - run:
           name: docker scan
-          command: jf audit --format=table
+          command: jf audit --mvn --format=table
       
   docker-build:
     machine:
