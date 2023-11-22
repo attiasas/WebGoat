@@ -5,22 +5,47 @@ version: 2.1
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/configuration-reference/#jobs
 jobs:
-  say-hello:
-    # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/configuration-reference/#executor-job
-    docker:
-      - image: cimg/base:stable
-    # Add steps to the job
-    # See: https://circleci.com/docs/configuration-reference/#steps
+  normal-scan:
+    machine:
+      image: ubuntu-2204:2022.04.2
+    environment:
+      NO_COLOR: TRUE
+      JFROG_CLI_LOG_LEVEL: DEBUG
     steps:
-      - checkout
       - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
+          name: install cli 
+          command: curl -fL https://install-cli.jfrog.io | sh
+      - run:
+          name: cli config
+          command: jf config add jfrog-test --url=https://ecosysjfrog.jfrog.io/ --password=${JF_PLATFORM_PASS} --user=assafa --overwrite
+      - run:
+          name: docker scan
+          command: jf audit --format=table
+      
+  docker-build:
+    machine:
+      image: ubuntu-2204:2022.04.2
+    environment:
+      NO_COLOR: TRUE
+      JFROG_CLI_LOG_LEVEL: DEBUG
+    steps:
+      - run:
+          name: install cli 
+          command: curl -fL https://install-cli.jfrog.io | sh
+      - run:
+          name: cli config
+          command: jf config add jfrog-test --url=https://ecosysjfrog.jfrog.io/ --password=${JF_PLATFORM_PASS} --user=assafa --overwrite
+      - run:
+          name: docker pull
+          command: docker pull nginx:latest
+      - run:
+          name: docker scan
+          command: jf docker scan nginx:latest --format=table
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/configuration-reference/#workflows
 workflows:
-  say-hello-workflow:
+  sample:
     jobs:
-      - say-hello
+      - docker-build
+      - normal-scan
