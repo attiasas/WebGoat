@@ -1,0 +1,54 @@
+name: Frogbot PR Scan
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  JFROG_CLI_LOG_LEVEL: DEBUG
+  JF_URL: ${{ secrets.FROGBOT_URL }}
+  JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_ACCESS_TOKEN }}
+  JFROG_CLI_XRAY_LIB_PLUGIN_VERSION: ${{ vars.XSPECTER_VERSION || '' }}
+  JFROG_CLI_ANALYZER_MANAGER_VERSION: ${{ vars.ANALYZER_MANAGER_VERSION || '' }}
+  JF_GIT_PROVIDER: github
+  JF_GIT_OWNER: attiasas
+  JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  JF_GIT_REPO: WebGoat
+
+jobs:
+  frogbot-scan:
+    runs-on: xray-dind-amd-scale-set
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Download Frogbot binary
+        run: |
+          mkdir -p "${{ runner.temp }}/frogbot"
+          curl -fsSL "https://releases.jfrog.io/artifactory/frogbot/v3/${{ vars.FROGBOT_VERSION }}/frogbot-linux-amd64/frogbot" -o "${{ runner.temp }}/frogbot/frogbot"
+          chmod +x "${{ runner.temp }}/frogbot/frogbot"
+
+      - name: Scan PR with Frogbot
+        if: github.event_name == 'pull_request'
+        run: |
+          "${{ runner.temp }}/frogbot/frogbot" scan-pull-request
+        env:
+          # Define the GitHub repository details
+          JF_GIT_PULL_REQUEST_ID: ${{ github.event.pull_request.number }}
+
+      - name: Scan commits with Frogbot
+        if: github.event_name != 'pull_request'
+        run: |
+          "${{ runner.temp }}/frogbot/frogbot" create-fix-pull-requests
+        env:
+          JF_GIT_BASE_BRANCH: main
