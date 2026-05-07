@@ -8,7 +8,9 @@ on:
     types: [ opened, synchronize, reopened ]
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
+  security-events: write
   pull-requests: write
 
 env:
