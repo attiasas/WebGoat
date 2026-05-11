@@ -39,7 +39,7 @@ public class VulnerableComponentsLesson implements AssignmentEndpoint {
                 .replace("> ", ">")
                 .replace(" <", "<");
       }
-      String noDirectPayload = payload;
+      String noDirectPayload = "not direct";
       contact = (Contact) xstream.fromXML(noDirectPayload);
     } catch (Exception ex) {
       return failed(this).feedback("vulnerable-components.close").output(ex.getMessage()).build();
